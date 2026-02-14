@@ -1,0 +1,57 @@
+function doGet() {
+
+  var sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName("Inventario");
+
+  if (!sheet) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        error: "No existe hoja llamada Inventario"
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var data = sheet.getDataRange().getDisplayValues();
+  var headers = data[0];
+
+  if (data.length <= 1) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        mensaje: "No hay productos en la hoja"
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Crear objeto para ubicar columnas automáticamente
+  var col = {};
+  headers.forEach(function(header, index) {
+    col[header] = index;
+  });
+
+  var productos = [];
+
+  for (var i = 1; i < data.length; i++) {
+
+    if (data[i][col["Activo"]] === "TRUE") {
+
+      productos.push({
+        ID: data[i][col["ID"]],
+        Modelo: data[i][col["Modelo"]],
+        Marca: data[i][col["Marca"]],
+        Talla: data[i][col["Talla"]],
+        Color: data[i][col["Color"]],
+        R: data[i][col["R"]],
+        Venta: data[i][col["Venta"]],
+        Stock: data[i][col["Stock"]],
+        Imagen: data[i][col["Imagen"]]
+      });
+
+    }
+
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(productos, null, 2))
+    .setMimeType(ContentService.MimeType.JSON);
+}
