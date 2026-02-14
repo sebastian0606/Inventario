@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tienda</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  background:#f5f5f5;
+}
+
+header{
+  background:#111;
+  color:white;
+  padding:20px;
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
+}
+
+.container{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:20px;
+  padding:30px;
+}
+
+.card{
+  background:white;
+  border-radius:10px;
+  padding:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  transition:0.3s;
+}
+
+.card:hover{
+  transform:translateY(-5px);
+}
+
+.card img{
+  width:100%;
+  height:200px;
+  object-fit:cover;
+  border-radius:6px;
+}
+
+.marca{
+  font-size:13px;
+  color:#555;
+  margin-top:10px;
+}
+
+.modelo{
+  font-size:18px;
+  font-weight:bold;
+  margin:5px 0;
+}
+
+.precio{
+  color:green;
+  font-size:18px;
+  margin:8px 0;
+}
+
+select, button{
+  width:100%;
+  padding:8px;
+  margin-top:8px;
+  border-radius:6px;
+}
+
+button{
+  background:#111;
+  color:white;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+button:hover{
+  background:#333;
+}
+</style>
+</head>
+<body>
+
+<header>🥾 KICKS DE SEBAS</header>
+
+<div class="container" id="productos"></div>
+
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbxaQ0DZtpOEs20KhSCV_e10mXVBOpl87tDxGppTXtFCoGAqtKHWs7DqMHMQaR8nQ9cu/exec";
+
+fetch(API_URL)
+.then(res => res.json())
+.then(data => {
+
+  const container = document.getElementById("productos");
+  const productos = {};
+
+  // AGRUPAR POR MODELO Y COLOR
+  data.forEach(item => {
+
+    const modelo = item.Modelo;
+    const color = item.Color;
+
+    if(!productos[modelo]){
+      productos[modelo] = {
+        Marca: item.Marca,
+        Modelo: modelo,
+        Precio: Number(item.Venta),
+        Colores: {}
+      };
+    }
+
+    if(!productos[modelo].Colores[color]){
+      productos[modelo].Colores[color] = {
+        Imagen: item.Imagen || "https://via.placeholder.com/300",
+        Tallas: []
+      };
+    }
+
+    // AGREGAR TODAS LAS TALLAS (NO SE PISAN)
+    productos[modelo].Colores[color].Tallas.push({
+      Talla: item.Talla,
+      Stock: Number(item.Stock)
+    });
+
+  });
+
+  // CREAR TARJETAS
+  Object.values(productos).forEach(producto => {
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const colores = Object.keys(producto.Colores);
+
+    card.innerHTML = `
+      <img src="${producto.Colores[colores[0]].Imagen}">
+      <div class="marca">${producto.Marca}</div>
+      <div class="modelo">${producto.Modelo}</div>
+      <div class="precio">$ ${Number(producto.Precio).toLocaleString()}</div>
+
+      <select class="color-select">
+        ${colores.map(c => `<option value="${c}">${c}</option>`).join("")}
+      </select>
+
+      <select class="talla-select"></select>
+
+      <button>Agregar al carrito</button>
+    `;
+
+    container.appendChild(card);
+
+    const colorSelect = card.querySelector(".color-select");
+    const tallaSelect = card.querySelector(".talla-select");
+    const img = card.querySelector("img");
+
+    function actualizar(color){
+
+      const info = producto.Colores[color];
+
+      img.src = info.Imagen;
+
+      tallaSelect.innerHTML = info.Tallas
+        .sort((a,b)=>a.Talla - b.Talla)
+        .map(t => {
+
+          const disabled = t.Stock <= 0 ? "disabled" : "";
+
+          return `<option ${disabled}>
+                    ${t.Talla} (Stock: ${t.Stock})
+                  </option>`;
+        }).join("");
+    }
+
+    actualizar(colores[0]);
+
+    colorSelect.addEventListener("change", e=>{
+      actualizar(e.target.value);
+    });
+
+  });
+
+})
+.catch(error => {
+  console.error("Error cargando productos:", error);
+});
+
+</script>
+
+</body>
+</html>
